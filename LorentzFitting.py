@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 #%%
 #INPUT DATA FILE NAME HERE
-name = "70khzcsv"
+name = "80khzcsv"
 fmt = ".csv"
 
 #%%
@@ -96,13 +96,13 @@ raw_data = read_data(name + fmt, ',', '%')
 data = sort_data(raw_data)
 # print(data )
 xvals_raw = data[:,0]
-xvals = xvals_raw * 10**9
+xvals = xvals_raw
 # xvals = xvals[10:38]
 yvals = data[:,1]
 # yvals = yvals[10:38]
 
 #%% Main CURVE FIT
-guess_mast = [6, 0.040, 1]
+guess_mast = [6, 0.040E-9, 1E-9]
 
 opt, acc = curve_fit(fun, xvals, yvals, p0=guess_mast, maxfev = 1000000)
 
@@ -110,7 +110,7 @@ opt, acc = curve_fit(fun, xvals, yvals, p0=guess_mast, maxfev = 1000000)
 print('Parameter Values [I, y, x_0] = ', opt)
 print("==================================================")
 
-#%% Main ANALYSE
+#%% Main ANALYSE PEAKS AND HALF POINTS
 plt.scatter(xvals, yvals, label='RMS Voltage', s=7)
 
 last_val = xvals[np.argmax(xvals)]
@@ -120,15 +120,19 @@ xrange = np.linspace(0,last_val, 777)
 
 maxvalinx = np.argmax(yvals)
 resonant_peak = yvals[maxvalinx]
-print("Resonant Peak =", resonant_peak)
+print("RESONANT PEAK =", resonant_peak)
+resonant_peak_pos = xvals[maxvalinx]
+print("RESONANT PEAK CAPCITANCE =", resonant_peak_pos)
+print("==================================================")
 half_resonant_peak = resonant_peak / 2
-resontant_peak_pos = xvals[maxvalinx]
 
-plt.scatter(xvals[maxvalinx], yvals[maxvalinx], label='Resonant Peak', marker='x', s=50)
+
+plt.scatter(xvals[maxvalinx], yvals[maxvalinx], label='Measured Resonant Peak',
+            marker='x', s=50)
 
 fittedvals = fun(xrange, opt[0], opt[1], opt[2])
 resonant_peak_fitted_inx = np.argmax(fittedvals)
-# print(resonant_peak_fitted_inx)
+print("Resonant Peak Fitted index =",resonant_peak_fitted_inx)
 resonant_peak_fitted = fittedvals[resonant_peak_fitted_inx]
 print("Resonant Peak Fitted =", resonant_peak_fitted)
 fittedvalsU = fittedvals[resonant_peak_fitted_inx:]
@@ -141,26 +145,73 @@ print("size of fitted array lower half:",np.shape(fittedvalsL))
 # print(fittedvalsU)
 print("size of fitted array upper half:",np.shape(fittedvalsU))
 
-dC_U_index = np.argmin(abs(fittedvalsU-half_resonant_peak))
-dC_U = fittedvalsU[dC_U_index]
-print("Upper Half Maximum: ", dC_U)
 dC_L_index = np.argmin(abs(fittedvalsL-half_resonant_peak))
 dC_L = fittedvalsL[dC_L_index]
-print("Lower Half Maximum: ", dC_U)
-plt.scatter(xvals[maxvalinx], yvals[maxvalinx], label='Resonant Peak', marker='x', s=50)
-plt.scatter(xvals[maxvalinx], yvals[maxvalinx], label='Resonant Peak', marker='x', s=50)
+# print("Sub Lower Half Maximum index: ", dC_L_index)
+# print("Lower Half Maximum: ", dC_L)
+dC_U_index = np.argmin(abs(fittedvalsU-half_resonant_peak))
+dC_U = fittedvalsU[dC_U_index]
+# print("Sub Upper Half Maximum index: ", dC_U_index)
+# print("Upper Half Maximum: ", dC_U)
+
+dC_L_indext = dC_L_index
+dC_U_indext = dC_U_index + resonant_peak_fitted_inx
+print("Lower Half Maximum index: ", dC_L_indext)
+print("Upper Half Maximum index: ", dC_U_indext)
+dC_Lt = fittedvals[dC_L_indext]
+dC_Ut = fittedvals[dC_U_indext]
+print("Lower Half Maximum: ", dC_Lt)
+print("Lower Half Maximum: ", dC_Ut)
+Lower_Half_Capacitance = xrange[dC_L_indext]
+Upper_Half_Capacitance = xrange[dC_U_indext]
+print("Lower Half Maximum: ", dC_Lt)
+print("Lower Half Maximum: ", dC_Ut)
+
+print("==================================================")
+fwhm_capacitance = Upper_Half_Capacitance - Lower_Half_Capacitance
+print("RESONANT PEAK CAPCITANCE =", resonant_peak_pos)
+print("FULL WIDTH HALF MAXIMUM: ", fwhm_capacitance)
+print("==================================================")
+
+#%% Main Uncertainties
+
+plt.scatter(Lower_Half_Capacitance, dC_Lt, label='Lower Half Peak', marker='x',
+            s=50)
+plt.scatter(Upper_Half_Capacitance, dC_Ut, label='Upper Half Peak', marker='x',
+            s=50)
+plt.axvline(Lower_Half_Capacitance + 0.003E-9, c='grey', alpha = 0.5,
+            linestyle='--')
+plt.axvline(Lower_Half_Capacitance - 0.003E-9, c='grey', alpha = 0.5,
+            linestyle='--')
+plt.axvline(Upper_Half_Capacitance + 0.003E-9, c='grey', alpha = 0.5,
+            linestyle='--')
+plt.axvline(Upper_Half_Capacitance - 0.003E-9, c='grey', alpha = 0.5,
+            linestyle='--')
+propagated_halfpoint_unc = np.sqrt(2*(0.003E-9)**2)
+
+resonantnextspace = xvals[maxvalinx+1]-xvals[maxvalinx]
+resonantbackspace = xvals[maxvalinx]-xvals[maxvalinx-1]
+averagespacing = (resonantnextspace + resonantbackspace)/2
+print("Resonant Peak Uncertainty: ", averagespacing)
+print("FWHM Uncertainty: ", propagated_halfpoint_unc)
+plt.axvline(resonant_peak_pos + averagespacing, c='grey', alpha = 0.5,
+            linestyle='--')
+plt.axvline(resonant_peak_pos - averagespacing, c='grey', alpha = 0.5,
+            linestyle='--')
 
 print("==================================================")
 
+
 #%% Main PLOT
 try:
-    # plt.xlim(0.75, 1.25)
+    plt.xlim(0.6E-9, 0.8E-9)
     plt.plot(xrange, fittedvals,  
              label='Fitted function')
 except Exception:
     print("couldn't plot curve")
     pass
 
-plt.legend(loc='best')
-plt.savefig('curvefit.png', dpi=777)
+plt.legend(loc='upper left',
+               borderaxespad=0.5, fontsize='8')
+plt.savefig('curvefit.png', dpi=1000)
 plt.show()
