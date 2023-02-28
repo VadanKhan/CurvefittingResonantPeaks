@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 #%%
 #INPUT DATA FILE NAME HERE
-name = "80khzcsv"
+name = "60khzparaffincsv"
 fmt = ".csv"
 
 #%%
@@ -119,6 +119,7 @@ xrange = np.linspace(0,last_val, 777)
 
 
 maxvalinx = np.argmax(yvals)
+maxvalinx = maxvalinx +1
 resonant_peak = yvals[maxvalinx]
 print("RESONANT PEAK =", resonant_peak)
 resonant_peak_pos = xvals[maxvalinx]
@@ -204,7 +205,7 @@ print("==================================================")
 
 #%% Main PLOT
 try:
-    plt.xlim(0.6E-9, 0.8E-9)
+    # plt.xlim(0.6E-9, 0.8E-9)
     plt.plot(xrange, fittedvals,  
              label='Fitted function')
 except Exception:
