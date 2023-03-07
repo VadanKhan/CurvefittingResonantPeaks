@@ -301,7 +301,9 @@ v1v2 = 1/fractions
 xvals = np.sqrt(v1v2**2 - 1)
 differences = np.array([fwhm_capacitance, diff11, diff12, diff13, diff14, 
                         diff15, diff16, diff17, diff18, diff19])
-differences_unc = np.array([fhwm_propagated_halfpoint_unc, diff11unc, diff12unc, diff13unc, diff14unc, 
-                        diff15unc, diff16unc, diff17unc, diff18unc, diff19unc])
+differences_unc = np.array([fhwm_propagated_halfpoint_unc, diff11unc, diff12unc,
+                            diff13unc, diff14unc, diff15unc, diff16unc, 
+                            diff17unc, diff18unc, diff19unc])
 powerlossarray = np.column_stack((xvals, differences, differences_unc))
 print(powerlossarray)
+np.savetxt('powerlossarray' + name + '.csv', powerlossarray, delimiter = ',')
