@@ -90,6 +90,73 @@ def fun(x, I, y, x_0):
     
     return  num/den
 
+def width(fraction_input, uncertainty_input):
+    '''
+    REQUIRED TO BE AFTER "Main fit funciton and split array"
+
+    Parameters
+    ----------
+    fraction_input : TYPE
+        DESCRIPTION.
+    uncertainty_input : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    x_difference : TYPE
+        DESCRIPTION.
+    propagated_halfpoint_unc : TYPE
+        DESCRIPTION.
+
+    '''
+    print("FINDING WIDTH FOR FRACTION:", fraction_input)
+    x_resonant_peak = fraction_input * resonant_peak
+    dC_a_index = np.argmin(abs(fittedvalsL-x_resonant_peak))
+    dC_a = fittedvalsL[dC_L_index]
+    # print("Sub Lower Half Maximum index: ", dC_L_index)
+    # print("Lower Half Maximum: ", dC_L)
+    dC_b_index = np.argmin(abs(fittedvalsU-x_resonant_peak))
+    dC_b = fittedvalsU[dC_U_index]
+    # print("Sub Upper Half Maximum index: ", dC_U_index)
+    # print("Upper Half Maximum: ", dC_U)
+    
+    dC_a_indext = dC_a_index
+    dC_b_indext = dC_b_index + resonant_peak_fitted_inx
+    print("C_a index: ", dC_a_indext)
+    print("C_b index: ", dC_b_indext)
+    dC_at = fittedvals[dC_a_indext]
+    dC_bt = fittedvals[dC_b_indext]
+    print("V(C_a): ", dC_at)
+    print("V(C_b): ", dC_bt)
+    Capacitance_a = xrange[dC_a_indext]
+    Capacitance_b = xrange[dC_b_indext]
+    print("Capacitance_a: ", Capacitance_a)
+    print("Capacitance_b: ", Capacitance_b)
+
+    x_difference = Capacitance_b - Capacitance_a
+
+
+    #%%PLOT Ca Cb
+    plt.scatter(Capacitance_a, dC_at, marker='x',
+                s=50)
+    plt.scatter(Capacitance_b, dC_bt, marker='x',
+                s=50)
+    # plt.axvline(Capacitance_a + uncertainty_input, c='grey', alpha = 0.5,
+    #             linestyle='--')
+    # plt.axvline(Capacitance_a - uncertainty_input, c='grey', alpha = 0.5,
+    #             linestyle='--')
+    # plt.axvline(Capacitance_b + uncertainty_input, c='grey', alpha = 0.5,
+    #             linestyle='--')
+    # plt.axvline(Capacitance_b - uncertainty_input, c='grey', alpha = 0.5,
+    #             linestyle='--')
+    plt.axhline(x_resonant_peak, c='pink', alpha = 0.5,
+                linestyle='--')
+    propagated_halfpoint_unc = np.sqrt(2*(uncertainty_input)**2)
+    print("C_b-C_a: ", x_difference)
+    print("C_b-C_a uncertainty: ", propagated_halfpoint_unc)
+    print("==================================================")
+    return x_difference, propagated_halfpoint_unc
+
 #%% Main READ DATA
 raw_data = read_data(name + fmt, ',', '%')
 #print(data)
@@ -110,27 +177,28 @@ opt, acc = curve_fit(fun, xvals, yvals, p0=guess_mast, maxfev = 1000000)
 print('Parameter Values [I, y, x_0] = ', opt)
 print("==================================================")
 
-#%% Main ANALYSE PEAKS AND HALF POINTS
-plt.scatter(xvals, yvals, label='RMS Voltage', s=7)
+#%% Main ANALYSE PEAKS
+plt.scatter(xvals, yvals, label='RMS Voltage', c='grey', s=2)
 
 last_val = xvals[np.argmax(xvals)]
 #print(last_val)
-xrange = np.linspace(0,last_val, 777)
+xrange = np.linspace(0,last_val, 10000)
 
 
 maxvalinx = np.argmax(yvals)
-maxvalinx = maxvalinx +1
+# maxvalinx = maxvalinx +1
 resonant_peak = yvals[maxvalinx]
 print("RESONANT PEAK =", resonant_peak)
 resonant_peak_pos = xvals[maxvalinx]
 print("RESONANT PEAK CAPCITANCE =", resonant_peak_pos)
 print("==================================================")
-half_resonant_peak = resonant_peak / 2
+
 
 
 plt.scatter(xvals[maxvalinx], yvals[maxvalinx], label='Measured Resonant Peak',
             marker='x', s=50)
 
+#%% Main FIT FUNCTION AND SPLIT ARRAY
 fittedvals = fun(xrange, opt[0], opt[1], opt[2])
 resonant_peak_fitted_inx = np.argmax(fittedvals)
 print("Resonant Peak Fitted index =",resonant_peak_fitted_inx)
@@ -146,6 +214,8 @@ print("size of fitted array lower half:",np.shape(fittedvalsL))
 # print(fittedvalsU)
 print("size of fitted array upper half:",np.shape(fittedvalsU))
 
+#%% Main FIND HALF POINTS
+half_resonant_peak = resonant_peak / 2
 dC_L_index = np.argmin(abs(fittedvalsL-half_resonant_peak))
 dC_L = fittedvalsL[dC_L_index]
 # print("Sub Lower Half Maximum index: ", dC_L_index)
@@ -162,11 +232,11 @@ print("Upper Half Maximum index: ", dC_U_indext)
 dC_Lt = fittedvals[dC_L_indext]
 dC_Ut = fittedvals[dC_U_indext]
 print("Lower Half Maximum: ", dC_Lt)
-print("Lower Half Maximum: ", dC_Ut)
+print("Upper Half Maximum: ", dC_Ut)
 Lower_Half_Capacitance = xrange[dC_L_indext]
 Upper_Half_Capacitance = xrange[dC_U_indext]
-print("Lower Half Maximum: ", dC_Lt)
-print("Lower Half Maximum: ", dC_Ut)
+print("Lower Half C: ", Lower_Half_Capacitance)
+print("Upper Half C: ", Upper_Half_Capacitance)
 
 print("==================================================")
 fwhm_capacitance = Upper_Half_Capacitance - Lower_Half_Capacitance
@@ -174,8 +244,7 @@ print("RESONANT PEAK CAPCITANCE =", resonant_peak_pos)
 print("FULL WIDTH HALF MAXIMUM: ", fwhm_capacitance)
 print("==================================================")
 
-#%% Main Uncertainties
-
+#%% Main Plot FWHM
 plt.scatter(Lower_Half_Capacitance, dC_Lt, label='Lower Half Peak', marker='x',
             s=50)
 plt.scatter(Upper_Half_Capacitance, dC_Ut, label='Upper Half Peak', marker='x',
@@ -188,31 +257,51 @@ plt.axvline(Upper_Half_Capacitance + 0.003E-9, c='grey', alpha = 0.5,
             linestyle='--')
 plt.axvline(Upper_Half_Capacitance - 0.003E-9, c='grey', alpha = 0.5,
             linestyle='--')
-propagated_halfpoint_unc = np.sqrt(2*(0.003E-9)**2)
+fhwm_propagated_halfpoint_unc = np.sqrt(2*(0.003E-9)**2)
 
+#%% Main FWHM  Uncertainties
 resonantnextspace = xvals[maxvalinx+1]-xvals[maxvalinx]
 resonantbackspace = xvals[maxvalinx]-xvals[maxvalinx-1]
 averagespacing = (resonantnextspace + resonantbackspace)/2
 print("Resonant Peak Uncertainty: ", averagespacing)
-print("FWHM Uncertainty: ", propagated_halfpoint_unc)
+print("FWHM Uncertainty: ", fhwm_propagated_halfpoint_unc)
 plt.axvline(resonant_peak_pos + averagespacing, c='grey', alpha = 0.5,
             linestyle='--')
 plt.axvline(resonant_peak_pos - averagespacing, c='grey', alpha = 0.5,
             linestyle='--')
-
 print("==================================================")
 
+#%% Main Find Ca and Cb general
+diff19, diff19unc = width(19/20, 0.001E-9)
+diff18, diff18unc = width(18/20, 0.001E-9)
+diff17, diff17unc = width(17/20, 0.002E-9)
+diff16, diff16unc = width(16/20, 0.002E-9)
+diff15, diff15unc = width(15/20, 0.003E-9)
+diff14, diff14unc = width(14/20, 0.003E-9)
+diff13, diff13unc = width(13/20, 0.003E-9)
+diff12, diff12unc = width(12/20, 0.003E-9)
+diff11, diff11unc = width(11/20, 0.003E-9)
 
 #%% Main PLOT
 try:
-    # plt.xlim(0.6E-9, 0.8E-9)
+    plt.xlim(1.16E-9, 1.27E-9)
     plt.plot(xrange, fittedvals,  
-             label='Fitted function')
+             label='Fitted function', c='grey')
 except Exception:
     print("couldn't plot curve")
     pass
 
-plt.legend(loc='upper left',
-               borderaxespad=0.5, fontsize='8')
+plt.legend(loc = 'lower right', borderaxespad=0, fontsize='5')
 plt.savefig('curvefit.png', dpi=1000)
 plt.show()
+
+#%% Main Aggregate C differences and fractions
+fractions = np.array([0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95])
+v1v2 = 1/fractions
+xvals = np.sqrt(v1v2**2 - 1)
+differences = np.array([fwhm_capacitance, diff11, diff12, diff13, diff14, 
+                        diff15, diff16, diff17, diff18, diff19])
+differences_unc = np.array([fhwm_propagated_halfpoint_unc, diff11unc, diff12unc, diff13unc, diff14unc, 
+                        diff15unc, diff16unc, diff17unc, diff18unc, diff19unc])
+powerlossarray = np.column_stack((xvals, differences, differences_unc))
+print(powerlossarray)
