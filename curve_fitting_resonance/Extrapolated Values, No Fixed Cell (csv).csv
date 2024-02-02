@@ -1,0 +1,4 @@
+Frequency (Hz),Resonant Peak (F) * 10^-9,Full width Half Maximum (F) * 10^-11
+60000,1.4267,0.07874
+70000,0.9867,0.05558
+80000,0.72233,0.04403
